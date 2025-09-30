@@ -4,6 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class Alarm : MonoBehaviour
 {
+    [SerializeField] private Detector _enemyDetector;
     [SerializeField] private AudioClip _audioClip;
 
     private AudioSource _audioSource;
@@ -19,26 +20,38 @@ public class Alarm : MonoBehaviour
         _audioSource.volume = 0f;
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnEnable()
+    {
+        _enemyDetector.EnemyEntered += IncreaseVolume;
+        _enemyDetector.EnemyExited += DecreaseVolume;
+    }
+
+    private void OnDisable()
+    {
+        _enemyDetector.EnemyEntered -= IncreaseVolume;
+        _enemyDetector.EnemyExited -= DecreaseVolume;
+    }
+
+    private void IncreaseVolume() 
     {
         _audioSource.Play();
         StartNewCorutine(ChangeVolum(_maximumVolum));
     }
 
-    private void OnTriggerExit(Collider other)
+    private void DecreaseVolume() 
     {
         StartNewCorutine(ChangeVolum(_minimumVolum));
     }
 
     private IEnumerator ChangeVolum(float targetVolum)
     {
-        while (_audioSource.volume != targetVolum)
+        while (!Mathf.Approximately(_audioSource.volume, targetVolum))
         {
             _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolum, _speed * Time.deltaTime); ;
             yield return null;
         }
 
-        if(_audioSource.volume == _minimumVolum)
+        if(Mathf.Approximately(_audioSource.volume, _minimumVolum))
             _audioSource.Stop();
     }
 
